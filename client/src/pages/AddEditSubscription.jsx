@@ -69,17 +69,32 @@ const AddEditSubscription = () => {
     setError('');
 
     // Validation
-    if (!formData.serviceName || !formData.amount) {
-      setError('Service name and amount are required');
+    if (!formData.serviceName || !formData.amount || !formData.startDate || !formData.endDate) {
+      setError('Service name, amount, start date, and end date are required');
       return;
     }
 
     setLoading(true);
 
     try {
+      // Filter form data to only include fields expected by API
+      const submitData = {
+        serviceName: formData.serviceName,
+        description: formData.description,
+        category: formData.category,
+        amount: formData.amount,
+        billingCycle: formData.billingCycle,
+        billingCycleDays: formData.billingCycleDays,
+        startDate: formData.startDate,
+        endDate: formData.endDate,
+        reminderDaysBefore: formData.reminderDaysBefore,
+        paymentMethod: formData.paymentMethod,
+        notes: formData.notes
+      };
+
       const response = isEdit
-        ? await subscriptionAPI.update(id, formData)
-        : await subscriptionAPI.create(formData);
+        ? await subscriptionAPI.update(id, submitData)
+        : await subscriptionAPI.create(submitData);
 
       if (response.data.success) {
         navigate('/subscriptions');
