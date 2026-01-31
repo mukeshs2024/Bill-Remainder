@@ -33,28 +33,28 @@ const AddEditSubscription = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    const fetchSubscription = async () => {
+      try {
+        setLoading(true);
+        const response = await subscriptionAPI.getById(id);
+        if (response.data.success) {
+          const sub = response.data.subscription;
+          setFormData({
+            ...sub,
+            startDate: new Date(sub.startDate).toISOString().split('T')[0]
+          });
+        }
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to load subscription');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     if (isEdit) {
       fetchSubscription();
     }
-  }, [fetchSubscription, isEdit]);
-
-  const fetchSubscription = async () => {
-    try {
-      setLoading(true);
-      const response = await subscriptionAPI.getById(id);
-      if (response.data.success) {
-        const sub = response.data.subscription;
-        setFormData({
-          ...sub,
-          startDate: new Date(sub.startDate).toISOString().split('T')[0]
-        });
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load subscription');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [isEdit, id]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;

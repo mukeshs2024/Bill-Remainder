@@ -16,28 +16,28 @@ const SubscriptionsList = () => {
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    fetchSubscriptions();
-  }, [fetchSubscriptions]);
-
-  const fetchSubscriptions = async () => {
-    try {
-      setLoading(true);
-      setError('');
-      const isActive = filter === 'active' ? true : filter === 'inactive' ? false : undefined;
-      const response = await subscriptionAPI.getAll(isActive);
-      if (response.data.success) {
-        setSubscriptions(response.data.subscriptions || []);
-      } else {
+    const fetchSubscriptions = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        const isActive = filter === 'active' ? true : filter === 'inactive' ? false : undefined;
+        const response = await subscriptionAPI.getAll(isActive);
+        if (response.data.success) {
+          setSubscriptions(response.data.subscriptions || []);
+        } else {
+          setSubscriptions([]);
+        }
+      } catch (err) {
+        console.error('Failed to load subscriptions:', err);
+        setError(err.response?.data?.message || 'Failed to load subscriptions');
         setSubscriptions([]);
+      } finally {
+        setLoading(false);
       }
-    } catch (err) {
-      console.error('Failed to load subscriptions:', err);
-      setError(err.response?.data?.message || 'Failed to load subscriptions');
-      setSubscriptions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchSubscriptions();
+  }, [filter]);
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this subscription?')) {
