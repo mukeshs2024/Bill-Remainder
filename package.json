@@ -1,0 +1,33 @@
+{
+  "name": "bill-reminder-system",
+  "version": "1.0.0",
+  "description": "Smart Subscription & Bill Reminder System - Full Stack Application",
+  "main": "server/server.js",
+  "scripts": {
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install",
+    "dev-backend": "cd server && npm run dev",
+    "dev-frontend": "cd client && npm start",
+    "start-backend": "cd server && npm start",
+    "start-frontend": "cd client && npm start",
+    "build": "cd client && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "subscription",
+    "bill",
+    "reminder",
+    "notification",
+    "expense-tracker",
+    "financial-management"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/bill-reminder-system.git"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}
