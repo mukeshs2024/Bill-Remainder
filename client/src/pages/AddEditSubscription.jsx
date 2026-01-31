@@ -36,7 +36,7 @@ const AddEditSubscription = () => {
     if (isEdit) {
       fetchSubscription();
     }
-  }, [id]);
+  }, [fetchSubscription, isEdit]);
 
   const fetchSubscription = async () => {
     try {

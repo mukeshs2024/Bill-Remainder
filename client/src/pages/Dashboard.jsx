@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { dashboardAPI, subscriptionAPI } from '../services/api';
+import { dashboardAPI } from '../services/api';
 import { AlertCircle, TrendingUp, DollarSign, Clock } from 'lucide-react';
 
 const Dashboard = () => {

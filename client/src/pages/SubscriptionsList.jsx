@@ -17,7 +17,7 @@ const SubscriptionsList = () => {
 
   useEffect(() => {
     fetchSubscriptions();
-  }, [filter]);
+  }, [fetchSubscriptions]);
 
   const fetchSubscriptions = async () => {
     try {
