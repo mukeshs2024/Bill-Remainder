@@ -263,3 +263,66 @@ exports.changePassword = async (req, res, next) => {
     next(error);
   }
 };
+/**
+ * Verify Clerk token and issue JWT
+ * This endpoint accepts Clerk session tokens and returns a JWT token
+ */
+exports.verifyClerkToken = async (req, res, next) => {
+  try {
+    const User = global.User;
+    const { clerkToken, clerkUserId, email, firstName, lastName } = req.body;
+
+    // Validation
+    if (!clerkToken || !clerkUserId || !email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Clerk token, user ID, and email are required'
+      });
+    }
+
+    console.log('[AUTH] Verifying Clerk token for user:', clerkUserId);
+
+    // Find or create user by Clerk ID
+    let user = await User.findOne({ clerkId: clerkUserId });
+
+    if (!user) {
+      // Create new user from Clerk data
+      console.log('[AUTH] Creating new user from Clerk data:', email);
+      user = await User.create({
+        clerkId: clerkUserId,
+        email,
+        username: email.split('@')[0],
+        firstName: firstName || '',
+        lastName: lastName || '',
+        password: null // Clerk handles password
+      });
+    } else {
+      // Update user info if changed
+      user.email = email;
+      user.firstName = firstName || user.firstName;
+      user.lastName = lastName || user.lastName;
+      await user.save();
+    }
+
+    // Generate JWT token for API access
+    const token = generateToken(user._id);
+
+    console.log('[AUTH] JWT token issued for Clerk user:', clerkUserId);
+
+    res.status(200).json({
+      success: true,
+      message: 'Token verified successfully',
+      token,
+      user: {
+        _id: user._id,
+        clerkId: user.clerkId,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName
+      }
+    });
+  } catch (error) {
+    console.error('[AUTH] Error verifying Clerk token:', error);
+    next(error);
+  }
+};

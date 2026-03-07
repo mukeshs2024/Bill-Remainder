@@ -6,7 +6,7 @@ const subscriptionSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  serviceName: {
+  name: {
     type: String,
     required: true
   },
@@ -16,68 +16,180 @@ const subscriptionSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    default: 'other'
-  },
-  amount: {
-    type: Number,
+    enum: ['Internet', 'Loan', 'Insurance', 'Subscription', 'Other'],
     required: true
   },
-  billingCycle: {
-    type: String,
-    enum: ['monthly', 'yearly', 'custom'],
-    default: 'monthly'
-  },
-  billingCycleDays: {
+  // ============================================================
+  // UNIVERSAL FIELDS (All categories)
+  // ============================================================
+  amount: {
     type: Number,
-    default: 30
+    required: true,
+    description: 'Recurring amount (Subscription/Internet) OR EMI amount (Loan) OR Premium (Insurance)'
+  },
+  cycle: {
+    type: String,
+    enum: ['weekly', 'monthly', 'quarterly', 'yearly'],
+    default: 'monthly',
+    description: 'Billing cycle - auto-set by category'
   },
   startDate: {
     type: Date,
-    required: true
+    required: true,
+    description: 'Billing start date (immutable)'
   },
   nextDueDate: {
     type: Date,
-    required: true
+    required: true,
+    description: 'Next payment due date (auto-calculated by backend)'
   },
-  reminderDaysBefore: {
+  expiryDate: {
+    type: Date,
+    default: null,
+    description: 'Reminder cutoff date (user-provided)'
+  },
+  
+  // ============================================================
+  // LOAN-SPECIFIC FIELDS
+  // ============================================================
+  totalAmount: {
     type: Number,
-    default: 3
+    default: null,
+    description: 'Total loan amount (Loan category only)'
   },
-  paymentMethod: {
+  emiAmount: {
+    type: Number,
+    default: null,
+    description: 'Monthly EMI amount (Loan category only)'
+  },
+  tenureMonths: {
+    type: Number,
+    default: null,
+    description: 'Loan tenure in months (Loan category only)'
+  },
+  remainingAmount: {
+    type: Number,
+    default: null,
+    description: 'Outstanding loan balance (Loan category only)'
+  },
+  endDate: {
+    type: Date,
+    default: null,
+    description: 'Auto-calculated loan end date (Loan category only)'
+  },
+  
+  // ============================================================
+  // INSURANCE-SPECIFIC FIELDS
+  // ============================================================
+  provider: {
     type: String,
-    default: ''
+    default: null,
+    description: 'Service provider name (Insurance/Internet/Telecom)'
   },
+  policyNumber: {
+    type: String,
+    default: null,
+    description: 'Insurance policy number'
+  },
+  coverageAmount: {
+    type: Number,
+    default: null,
+    description: 'Insurance coverage amount'
+  },
+  renewalType: {
+    type: String,
+    enum: ['monthly', 'quarterly', 'yearly', null],
+    default: null,
+    description: 'Insurance renewal frequency'
+  },
+  
+  // ============================================================
+  // INTERNET-SPECIFIC FIELDS
+  // ============================================================
+  planName: {
+    type: String,
+    default: null,
+    description: 'Internet/Broadband plan name'
+  },
+  speedMbps: {
+    type: Number,
+    default: null,
+    description: 'Internet speed in Mbps'
+  },
+  
+  // ============================================================
+  // UNIVERSAL PAYMENT TRACKING
+  // ============================================================
+  lastPaidDate: {
+    type: Date,
+    description: 'Last payment date (used for Internet and EMI tracking)'
+  },
+  
+  // ============================================================
+  // NOTIFICATION SETTINGS
+  // ============================================================
+  remindBefore: {
+    type: Number,
+    default: 3,
+    description: 'Days before due date to send reminder'
+  },
+  whatsappPhone: {
+    type: String,
+    default: null,
+    description: 'WhatsApp phone number for notifications'
+  },
+  
+  // ============================================================
+  // METADATA
+  // ============================================================
   notes: {
     type: String,
     default: ''
+  },
+  paymentMethod: {
+    type: String,
+    enum: ['credit_card', 'debit_card', 'upi', 'bank_transfer', 'cash'],
+    default: 'credit_card'
+  },
+  status: {
+    type: String,
+    enum: ['Active', 'Paused', 'Expired', 'Completed'],
+    default: 'Active',
+    description: 'Completed for loans when remainingAmount <= 0'
   },
   isActive: {
     type: Boolean,
     default: true
   },
-  lastPaidDate: {
-    type: Date
-  },
-  lastReminderSent: {
-    type: Date
-  },
   email: {
     type: String,
     required: true
   },
-  phone: {
-    type: String,
-    default: null,
-    description: 'WhatsApp phone number in E.164 format: +91...'
-  },
-  endDate: {
+  lastPaidDate: {
     type: Date,
-    required: true
+    description: 'Last payment date (used for EMI tracking)'
+  },
+  paidCount: {
+    type: Number,
+    default: 0,
+    description: 'Number of EMI payments made (Loan only)'
+  },
+  paymentHistory: {
+    type: [{
+      amount: { type: Number, required: true },
+      paidAt: { type: Date, default: Date.now },
+      note: { type: String, default: '' }
+    }],
+    default: [],
+    description: 'Record of all payments made'
+  },
+  lastReminderSent: {
+    type: Date
   },
   remindersSent: {
     type: [Number],
     default: [],
-    description: 'Array of days when reminders were sent: [7, 3, 2, 1, 0, -1]'
+    description: 'Array of days when reminders were sent'
   },
   createdAt: {
     type: Date,
@@ -87,7 +199,7 @@ const subscriptionSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   }
-});
+}, { timestamps: true });
 
 // Update updatedAt before save
 subscriptionSchema.pre('save', function(next) {
@@ -95,48 +207,8 @@ subscriptionSchema.pre('save', function(next) {
   next();
 });
 
-// Instance method to calculate next due date
-subscriptionSchema.methods.calculateNextDueDate = function() {
-  let nextDate = new Date(this.startDate);
-  
-  if (this.billingCycle === 'monthly') {
-    nextDate.setMonth(nextDate.getMonth() + 1);
-  } else if (this.billingCycle === 'yearly') {
-    nextDate.setFullYear(nextDate.getFullYear() + 1);
-  } else if (this.billingCycle === 'custom' && this.billingCycleDays) {
-    nextDate.setDate(nextDate.getDate() + this.billingCycleDays);
-  }
-  
-  return nextDate;
-};
-
-// Instance method to check if reminder should be sent
-subscriptionSchema.methods.shouldSendReminder = function() {
-  if (!this.isActive) return false;
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  
-  if (this.lastReminderSent) {
-    const lastReminder = new Date(this.lastReminderSent);
-    lastReminder.setHours(0, 0, 0, 0);
-    if (lastReminder.getTime() === today.getTime()) {
-      return false;
-    }
-  }
-  
-  const dueDate = new Date(this.nextDueDate);
-  const reminderDate = new Date(dueDate);
-  reminderDate.setDate(reminderDate.getDate() - this.reminderDaysBefore);
-  
-  return today >= reminderDate && today <= dueDate;
-};
-
-// Instance method to mark as paid
-subscriptionSchema.methods.markAsPaid = function() {
-  this.lastPaidDate = new Date();
-  this.nextDueDate = this.calculateNextDueDate();
-  return this.save();
-};
+// Index for faster queries
+subscriptionSchema.index({ userId: 1, category: 1, status: 1 });
+subscriptionSchema.index({ userId: 1, nextDueDate: 1 });
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);

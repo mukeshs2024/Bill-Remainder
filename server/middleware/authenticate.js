@@ -1,65 +1,42 @@
-const jwt = require('jsonwebtoken');
-
 /**
  * Authentication Middleware
- * Verifies JWT token and attaches user to request object
+ * Verifies JWT tokens and extracts user ID from token
  */
-const authenticateToken = async (req, res, next) => {
+
+const { verifyToken } = require('../utils/jwtUtils');
+
+const authenticateToken = (req, res, next) => {
   try {
     // Get token from Authorization header
     const authHeader = req.headers['authorization'];
-    console.log('[MIDDLEWARE] Auth header:', authHeader ? 'Present' : 'Missing');
-    
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1]; // "Bearer TOKEN"
 
     if (!token) {
-      console.log('[MIDDLEWARE] No token found in Authorization header');
       return res.status(401).json({
         success: false,
-        message: 'Access token required'
+        message: 'No authentication token provided'
       });
     }
 
-    console.log('[MIDDLEWARE] Token found, verifying...');
+    // Verify token and extract user ID
+    const decoded = verifyToken(token);
     
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('[MIDDLEWARE] Token verified for user ID:', decoded.userId);
-
-    // Fetch user details using global User model
-    const User = global.User;
-    if (!User) {
-      console.error('[MIDDLEWARE] Database not initialized');
-      return res.status(500).json({
-        success: false,
-        message: 'Database not initialized'
-      });
-    }
-
-    const user = await User.findById(decoded.userId);
-    if (!user) {
-      console.log('[MIDDLEWARE] User not found for ID:', decoded.userId);
+    if (!decoded || !decoded.userId) {
       return res.status(401).json({
         success: false,
-        message: 'User not found'
+        message: 'Invalid or expired token'
       });
     }
 
-    // Attach user to request
+    // Attach user ID to request
     req.userId = decoded.userId;
-    console.log('[MIDDLEWARE] User authenticated:', user.email);
+    
     next();
   } catch (error) {
-    console.error('[MIDDLEWARE] Auth error:', error.name, error.message);
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({
-        success: false,
-        message: 'Token expired'
-      });
-    }
+    console.error('[AUTH] Token verification failed:', error.message);
     return res.status(401).json({
       success: false,
-      message: 'Invalid token'
+      message: 'Token verification failed'
     });
   }
 };

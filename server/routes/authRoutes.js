@@ -12,6 +12,7 @@ const authenticateToken = require('../middleware/authenticate');
 // Public Routes
 router.post('/register', authController.register);
 router.post('/login', authController.login);
+router.post('/verify-clerk', authController.verifyClerkToken);
 
 // Protected Routes
 router.get('/me', authenticateToken, authController.getCurrentUser);

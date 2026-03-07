@@ -95,7 +95,22 @@ export const subscriptionAPI = {
     api.put(`/subscriptions/${id}/mark-paid`),
 
   delete: (id) =>
-    api.delete(`/subscriptions/${id}`)
+    api.delete(`/subscriptions/${id}`),
+
+  // LOAN-SPECIFIC ENDPOINTS
+  payEMI: (id, amountPaid = null) =>
+    api.post(`/subscriptions/${id}/pay-emi`, { amountPaid }),
+
+  getLoanStats: () =>
+    api.get('/subscriptions/loans/stats'),
+
+  // CATEGORY-SPECIFIC PAYMENT ENDPOINT
+  payBill: (id, amountPaid = null) =>
+    api.post(`/subscriptions/${id}/pay`, { amountPaid }),
+
+  // PAYMENT HISTORY
+  getPaymentHistory: () =>
+    api.get('/subscriptions/payments/history')
 };
 
 // ============================================
@@ -107,7 +122,10 @@ export const dashboardAPI = {
     api.get('/dashboard/stats'),
 
   getSpendingByCategory: () =>
-    api.get('/dashboard/category-breakdown')
+    api.get('/dashboard/category'),
+
+  getLoanDetails: () =>
+    api.get('/dashboard/loans')
 };
 
 export default api;

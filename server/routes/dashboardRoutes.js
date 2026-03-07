@@ -14,4 +14,7 @@ router.get('/stats', authenticateToken, dashboardController.getDashboardStats);
 // Get spending by category
 router.get('/category-breakdown', authenticateToken, dashboardController.getSpendingByCategory);
 
+// Get detailed loan information
+router.get('/loans', authenticateToken, dashboardController.getLoanDetails);
+
 module.exports = router;

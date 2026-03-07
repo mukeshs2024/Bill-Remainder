@@ -2,6 +2,12 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
+  clerkId: {
+    type: String,
+    default: null,
+    unique: true,
+    sparse: true
+  },
   username: {
     type: String,
     required: true,
@@ -17,9 +23,9 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: true,
     minlength: 6,
-    select: false
+    select: false,
+    default: null
   },
   firstName: {
     type: String,
@@ -53,7 +59,11 @@ const userSchema = new mongoose.Schema({
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
+  // Skip hashing if:
+  // 1. Password doesn't exist
+  // 2. Password is not a string (e.g., null, undefined, object)
+  // 3. Password was not modified
+  if (!this.password || typeof this.password !== 'string' || !this.isModified('password')) {
     return next();
   }
 
@@ -68,6 +78,10 @@ userSchema.pre('save', async function(next) {
 
 // Method to compare passwords
 userSchema.methods.comparePassword = async function(plainPassword) {
+  // If no password set (Clerk users), return false
+  if (!this.password) {
+    return false;
+  }
   return await bcrypt.compare(plainPassword, this.password);
 };
 
